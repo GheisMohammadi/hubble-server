@@ -20,6 +20,7 @@ INCLUDE2 = -I=. -I=${GOPATH}/src -I=${GOPATH}/src/github.com/gallactic/hubble_se
 PROTOPATH = --proto_path=${GOPATH}/src:${GOPATH}/src/github.com/gogo/protobuf/protobuf:.
 HUBBLE = ${GOPATH}/src/github.com/gallactic/hubble_service
 
+
 ### Tools & dependencies
 tools:
 	go get $(GOTOOLS)
@@ -29,7 +30,7 @@ tools:
 ### Protobuf
 proto:
 
-	--protoc $(PROTOPATH) --gogo_out=plugins=grpc:. $(HUBBLE)/blockchain.proto
+	--protoc $(PROTOPATH) --gogo_out=plugins=grpc:$(HUBBLE)/proto3 ./blockchain.proto
 
 ########################################
 ### Formatting, linting, and vetting

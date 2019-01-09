@@ -25,6 +25,26 @@
 #   unused-packages = true
 
 
+[[constraint]]
+  name = "github.com/gallactic/gallactic"
+  version = "0.4.0"
+
+[[constraint]]
+  name = "github.com/gogo/protobuf"
+  version = "1.1.1"
+
+[[constraint]]
+  name = "github.com/golang/protobuf"
+  version = "1.1.0"
+
+[[constraint]]
+  name = "github.com/tendermint/tendermint"
+  version = "0.27.2"
+
+[[constraint]]
+  name = "google.golang.org/grpc"
+  version = "1.17.0"
+
 [prune]
   go-tests = true
   unused-packages = true
