@@ -1,4 +1,4 @@
-UNAME := $(shell uname)
+
 GOTOOLS = \
 	github.com/golang/dep/cmd/dep \
 	gopkg.in/alecthomas/gometalinter.v2 \
@@ -12,17 +12,21 @@ GOTOOLS = \
 	github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway \
 	github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
 
-### /home/gheis/goApps/src/github.com/gallactic/hubble-service
-
-PACKAGES=$(shell go list ./... | grep -v '/vendor/')
-INCLUDE = -I=. -I=${GOPATH}/src -I=${GOPATH}/src/github.com -I=${GOPATH}/src/github.com/gallactic/hubble_service
-INCLUDE2 = -I=. -I=${GOPATH}/src -I=${GOPATH}/src/github.com/gallactic/hubble_service -I=${GOPATH}/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis
 PROTOPATH = --proto_path=${GOPATH}/src:${GOPATH}/src/github.com/gogo/protobuf/protobuf:.
 HUBBLE = ${GOPATH}/src/github.com/gallactic/hubble_service
 
+########################################
+### make all
+all: tools deps build
 
+########################################
 ### Tools & dependencies
+deps:
+
+	dep ensure
+
 tools:
+
 	go get $(GOTOOLS)
 	@gometalinter.v2 --install
 
@@ -36,3 +40,15 @@ proto:
 ### Formatting, linting, and vetting
 fmt:
 	@go fmt ./...
+
+########################################
+### building
+build:
+	@go build main.go
+
+# To avoid unintended conflicts with file names, always add to .PHONY
+# unless there is a reason not to.
+# https://www.gnu.org/software/make/manual/html_node/Phony-Targets.html
+.PHONY: tools deps
+.PHONY: build 
+.PHONY: fmt metalinter

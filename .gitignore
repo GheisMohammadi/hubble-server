@@ -1,0 +1,13 @@
+# Temporary / cached
+.idea
+.vscode
+
+.DS_Store
+
+Gopkg.lock
+
+# vendors
+vendor/*
+
+# builds
+main
