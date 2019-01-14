@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 
+	db "github.com/gallactic/hubble_service/database"
 	pb "github.com/gallactic/hubble_service/proto3"
+
 	"google.golang.org/grpc"
 )
 
@@ -25,20 +27,47 @@ func main() {
 
 	ret1, err := client.GetAccounts(context.Background(), &pb.Empty{})
 	if err == nil {
-		println("Account -> ", ret1.Accounts[0].Account)
+		println("Accounts Count -> ", len(ret1.Accounts))
+		for i := 0; i < len(ret1.Accounts); i++ {
+			println("Account ", i, " -> ", ret1.Accounts[i].Account)
+		}
 	} else {
 		println("GetAccounts Error -> ", err.Error())
 	}
 
 	ret2, err2 := client.GetGenesis(context.Background(), &pb.Empty{})
 	if err2 == nil {
-		println("Genesis -> ", ret2.Genesis)
+		println("Genesis Hash -> ", ret2.Genesis.ShortHash())
+		println("Genesis Chain Name -> ", ret2.Genesis.ChainName())
+		println("Genesis Accounts Count -> ", len(ret2.Genesis.Accounts()))
+		for i := 0; i < len(ret2.Genesis.Accounts()); i++ {
+			println("Account ", i, " -> ", ret2.Genesis.Accounts()[i])
+		}
+
 	} else {
 		println("GetGenesis Error -> ", err2.Error())
 	}
 
 	ret3, err3 := client.GetBlocks(context.Background(), &pb.BlocksRequest{})
 	if err3 == nil {
-		println("GetBlocks Size -> ", ret3.Size())
+		println("GetBlocks Size -> ", ret3.GetLastHeight())
+
+		//println("Last Block -> ", ret3.String())
+
+		//for i := 0; i < 10; i++ {
+		//	println("Account ", i, " -> ", len(ret3.)
+		//}
+
 	}
+
+	dbe := db.DBPostgre{Host: "localhost", Port: 5432, User: "postgres", Password: "gmpinc2007", DBname: "HubbleScan"}
+	connErr := dbe.Connect()
+	if connErr == nil {
+		println("Connected Successfully!")
+	} else {
+		println("connection error: ", connErr)
+	}
+	defer dbe.Disconnect()
+
+	dbe.InsertAccount("Addr123", "ABC", 1000, "Perm456", "Seq123", "CodeF1F2")
 }

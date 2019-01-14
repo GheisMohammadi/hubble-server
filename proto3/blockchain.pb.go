@@ -6,6 +6,7 @@ package proto3
 import (
 	context "context"
 	fmt "fmt"
+
 	github_com_gallactic_gallactic_common_binary "github.com/gallactic/gallactic/common/binary"
 	github_com_gallactic_gallactic_core_account "github.com/gallactic/gallactic/core/account"
 	github_com_gallactic_gallactic_core_proposal "github.com/gallactic/gallactic/core/proposal"
@@ -19,6 +20,7 @@ import (
 	github_com_tendermint_tendermint_p2p "github.com/tendermint/tendermint/p2p"
 	github_com_tendermint_tendermint_types "github.com/tendermint/tendermint/types"
 	grpc "google.golang.org/grpc"
+
 	//_ "google/protobuf"
 	io "io"
 	math "math"

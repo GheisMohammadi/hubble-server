@@ -10,7 +10,8 @@ GOTOOLS = \
 	github.com/gogo/protobuf/protoc-gen-gogo \
 	github.com/gogo/protobuf/gogoproto \
 	github.com/grpc-ecosystem/grpc-gateway/protoc-gen-grpc-gateway \
-	github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger
+	github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger \
+	github.com/lib/pq
 
 PROTOPATH = --proto_path=${GOPATH}/src:${GOPATH}/src/github.com/gogo/protobuf/protobuf:.
 HUBBLE = ${GOPATH}/src/github.com/gallactic/hubble_service
@@ -45,6 +46,9 @@ fmt:
 ### building
 build:
 	@go build main.go
+
+run:
+	@go run main.go
 
 # To avoid unintended conflicts with file names, always add to .PHONY
 # unless there is a reason not to.
