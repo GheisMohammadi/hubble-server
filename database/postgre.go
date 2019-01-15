@@ -7,7 +7,8 @@ import (
 	_ "github.com/lib/pq"
 )
 
-type DBPostgre struct {
+//Postgre adapter
+type Postgre struct {
 	Host     string  //"localhost"
 	Port     int     //5432
 	User     string  //"postgres"
@@ -17,7 +18,7 @@ type DBPostgre struct {
 }
 
 //Connect to database
-func (obe *DBPostgre) Connect() error {
+func (obe *Postgre) Connect() error {
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", obe.Host, obe.Port, obe.User, obe.Password, obe.DBname)
 
 	db, err := sql.Open("postgres", psqlInfo)
@@ -36,12 +37,12 @@ func (obe *DBPostgre) Connect() error {
 }
 
 //Disconnect close connection to database
-func (obe *DBPostgre) Disconnect() {
+func (obe *Postgre) Disconnect() {
 	obe.ObjDB.Close()
 }
 
 //InsertAccount add new Account to accounts table
-func (obe *DBPostgre) InsertAccount(acc *Account) error {
+func (obe *Postgre) InsertAccount(acc *Account) error {
 
 	sqlStatement := `INSERT INTO accounts (address, public_key, balance, permission,sequence,code)
 				VALUES ($1, $2, $3, $4, $5, $6)
@@ -56,7 +57,7 @@ func (obe *DBPostgre) InsertAccount(acc *Account) error {
 }
 
 //UpdateAccount modifies all fields for selected account
-func (obe *DBPostgre) UpdateAccount(id int, acc *Account) error {
+func (obe *Postgre) UpdateAccount(id int, acc *Account) error {
 	sqlStatement := `UPDATE accounts
 				SET address = $2, public_key = $3, balance = $4, permission = $5, sequence = $6, code = $7
 				WHERE id = $1
@@ -73,7 +74,7 @@ func (obe *DBPostgre) UpdateAccount(id int, acc *Account) error {
 }
 
 //GetAccount finds account in db and returns its data
-func (obe *DBPostgre) GetAccount(id int) (*Account, error) {
+func (obe *Postgre) GetAccount(id int) (*Account, error) {
 	sqlStatement := `SELECT * FROM accounts 
 					 WHERE id=$1;`
 	acc := &Account{Address: "", PublicKey: "", Balance: 0.0, Permission: "", Sequence: 0, Code: ""}
@@ -86,5 +87,21 @@ func (obe *DBPostgre) GetAccount(id int) (*Account, error) {
 		return acc, nil
 	default:
 		return nil, err
+	}
+}
+
+//GetBlocksTableLastID returns last block number
+func (obe *Postgre) GetBlocksTableLastID() (uint64, error) {
+	sqlStatement := `SELECT MAX(id) FROM blocks`
+	row := obe.ObjDB.QueryRow(sqlStatement)
+	var LastID uint64
+	err := row.Scan(LastID)
+	switch err {
+	case sql.ErrNoRows:
+		return 0, err
+	case nil:
+		return LastID, nil
+	default:
+		return 0, err
 	}
 }
