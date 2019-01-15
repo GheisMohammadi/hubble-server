@@ -69,5 +69,13 @@ func main() {
 	}
 	defer dbe.Disconnect()
 
-	dbe.InsertAccount("Addr123", "ABC", 1000, "Perm456", "Seq123", "CodeF1F2")
+	acc := db.Account{Address: "Addr123456", PublicKey: "ABC", Balance: 1234.56, Permission: "Perm456", Sequence: 2, Code: "CodeF1F2"}
+	dbe.InsertAccount(&acc)
+
+	sAcc, GAccErr := dbe.GetAccount(7)
+	if GAccErr == nil {
+		println("Account: ", sAcc.Address)
+	} else {
+		println("Get Account error: ", GAccErr.Error())
+	}
 }
