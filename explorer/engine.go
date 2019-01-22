@@ -1,8 +1,10 @@
 package explorer
 
 import (
-	bc "github.com/gallactic/hubble_service/blockchain"
-	db "github.com/gallactic/hubble_service/database"
+	"fmt"
+
+	bc "github.com/gallactic/hubble_server/blockchain"
+	db "github.com/gallactic/hubble_server/database"
 )
 
 //Explorer class for connecting block chain to data base
@@ -11,7 +13,7 @@ type Explorer struct {
 	DBAdapter db.Adapter
 }
 
-//Init to initialize database and Sync it with block chain
+//Init to initialize database and block chain
 func (e *Explorer) Init() error {
 	//connect to gallactic blockchain by gRPC
 	bcAdapter := e.BCAdapter
@@ -29,10 +31,17 @@ func (e *Explorer) Init() error {
 		return connErr
 	}
 	println("Connected to database successfully!")
-	defer dbAdapter.Disconnect()
+	return nil
+}
+
+//Update to Sync database with blockchain
+func (e *Explorer) Update() error {
+
+	//defer dbAdapter.Disconnect()
+	bcAdapter := e.BCAdapter
+	dbAdapter := e.DBAdapter
 
 	//Sync data with blockchain
-	println("Updating blockchain adapter...")
 	updateErr := bcAdapter.Update()
 	if updateErr != nil {
 		return updateErr
@@ -48,21 +57,57 @@ func (e *Explorer) Init() error {
 	}
 
 	if currentHeight > lastBlockIDInDB {
-		println("Reading blocks ", lastBlockIDInDB, " to ", currentHeight, "...")
-		//TODO: Read blocks and Save to Data Base
+		//Read blocks
+		//fmt.Printf("\r%d%% saved!", perc, startIndex-lastBlockIDInDB, d)
+
+		//println("Saving new blocks ", lastBlockIDInDB, " to ", currentHeight, " in database...")
+		d := currentHeight - lastBlockIDInDB
+		n := int(d / 1000)
+		var startIndex uint64
+		var endIndex uint64
+
+		startBlockID := lastBlockIDInDB + 1
+		if lastBlockIDInDB == 0 {
+			startBlockID = 0
+		}
+
+		for i := 0; i <= n; i++ {
+			startIndex = startBlockID + uint64(i*1000)
+			endIndex = startIndex + 999
+			if endIndex > currentHeight {
+				endIndex = currentHeight
+			}
+			blocks, _ := bcAdapter.GetBlocks(startIndex, endIndex)
+			savingErr := e.saveBlocksInDB(blocks, dbAdapter)
+			if savingErr != nil {
+				return savingErr
+			}
+
+			perc := (int)((float64(i+1) / float64(n+1)) * 100.0)
+			fmt.Printf("\r%d%% saved! (%d/%d)", perc, startIndex-lastBlockIDInDB, d)
+
+		}
+
+		fmt.Printf("\r%d blocks saved!", currentHeight)
 	}
 
-	block, blockErr := bcAdapter.GetBlock(14141)
-	if blockErr == nil {
-		println("Block Hash :", block.Hash)
-	} else {
-		println("Block error :", blockErr.Error())
+	return nil
+}
+
+func (e *Explorer) saveBlocksInDB(blocks []*bc.Block, dbAdapter db.Adapter) error {
+	l := len(blocks)
+	if l <= 0 {
+		return fmt.Errorf("Empty Blocks Array")
 	}
-
-	//println("Last Block -> ", ret3.String())
-
-	//for i := 0; i < 10; i++ {
-	//	println("Account ", i, " -> ", len(ret3.)
-	//}
+	for i := l - 1; i >= 0; i-- {
+		block := blocks[i]
+		err := dbAdapter.InsertBlock(block)
+		if err != nil {
+			return err
+		}
+		if block.TxCounts > 0 {
+			//println("block ", block.Height, " has ", block.TxCounts, " transactions!")
+		}
+	}
 	return nil
 }

@@ -14,7 +14,7 @@ GOTOOLS = \
 	github.com/lib/pq
 
 PROTOPATH = --proto_path=${GOPATH}/src:${GOPATH}/src/github.com/gogo/protobuf/protobuf:.
-HUBBLE = ${GOPATH}/src/github.com/gallactic/hubble_service
+HUBBLE = ${GOPATH}/src/github.com/gallactic/hubble_server
 
 ########################################
 ### make all

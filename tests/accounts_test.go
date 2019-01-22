@@ -3,7 +3,7 @@ package tests
 import (
 	"testing"
 
-	db "github.com/gallactic/hubble_service/database"
+	db "github.com/gallactic/hubble_server/database"
 	"github.com/stretchr/testify/require"
 )
 

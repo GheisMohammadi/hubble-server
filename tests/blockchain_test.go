@@ -3,7 +3,7 @@ package tests
 import (
 	"testing"
 
-	bc "github.com/gallactic/hubble_service/blockchain"
+	bc "github.com/gallactic/hubble_server/blockchain"
 	"github.com/stretchr/testify/require"
 )
 

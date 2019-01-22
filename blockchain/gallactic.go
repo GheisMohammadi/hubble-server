@@ -2,10 +2,9 @@ package blockchain
 
 import (
 	"context"
-	"encoding/hex"
 	"fmt"
 
-	pb "github.com/gallactic/hubble_service/proto3"
+	pb "github.com/gallactic/hubble_server/proto3"
 	"google.golang.org/grpc"
 )
 
@@ -51,16 +50,20 @@ func (g *Gallactic) GetBlocksLastHeight() uint64 {
 	return g.blocks.GetLastHeight()
 }
 
-//GetBlocksMeta returns specified block
-func (g *Gallactic) GetBlocksMeta(id int) (*BlockMeta, error) {
+//GetBlockMeta returns specified block
+func (g *Gallactic) GetBlockMeta(height uint64) (*BlockMeta, error) {
 
-	if id >= len(g.blocks.BlockMeta) {
-		return nil, fmt.Errorf("block index out of range (max is " + string(len(g.blocks.BlockMeta)) + ")")
+	client := *g.client
+	blockRes, getBlockErr := client.GetBlock(context.Background(), &pb.BlockRequest{Height: height})
+	if getBlockErr != nil {
+		return nil, getBlockErr
 	}
 
-	meta := &g.blocks.BlockMeta[id]
+	blockMeta := blockRes.BlockMeta
 
-	return toBlockMeta(meta), nil
+	var meta BlockMeta
+	toBlockMeta(blockMeta, &meta)
+	return &meta, nil
 }
 
 //GetBlock returns specified block
@@ -76,23 +79,9 @@ func (g *Gallactic) GetBlock(height uint64) (*Block, error) {
 		return nil, getBlockErr
 	}
 
-	blockMeta := blockRes.BlockMeta
-	blockID := blockMeta.BlockID
-	header := blockRes.Block.Header
-	data := blockRes.Block.Data
-
-	var b *Block
-	b = &Block{
-		ID:            height,
-		Hash:          hex.EncodeToString(blockID.Hash),
-		ChainID:       header.ChainID,
-		Height:        header.Height,
-		Time:          header.Time.String(),
-		LastBlockHash: hex.EncodeToString(header.LastBlockID.Hash),
-		TxCounts:      header.NumTxs,
-		DataHash:      hex.EncodeToString(data.Hash())}
-
-	return b, nil
+	var b Block
+	toBlock(blockRes, &b)
+	return &b, nil
 }
 
 //GetAccountsCount returns number of accounts
@@ -104,15 +93,61 @@ func (g *Gallactic) GetAccountsCount() int {
 //GetAccount returns specified account
 func (g *Gallactic) GetAccount(id int) (*Account, error) {
 	acc := g.accounts.Accounts[id].Account
-	code := fmt.Sprintf("%s", acc.Code())
 	ID := uint64(id)
-	hsAcc := &Account{Address: acc.Address().String(), PublicKey: "", Balance: acc.Balance(),
-		Permission: acc.Permissions().String(), Sequence: acc.Sequence(), Code: code, ID: ID}
-	return hsAcc, nil
+	var retAcc Account
+	toAccount(acc, &retAcc)
+	retAcc.ID = ID
+	return &retAcc, nil
 }
 
-/*
-for i := 0; i < len(ret1.Accounts); i++ {
-	println("Account ", i, " -> ", ret1.Accounts[i].Account)
+//GetAccounts returns all accounts in array of accounts
+func (g *Gallactic) GetAccounts() ([]*Account, error) {
+	l := len(g.accounts.Accounts)
+
+	retAccounts := make([]*Account, l)
+
+	for i := 0; i < l; i++ {
+		acc := g.accounts.Accounts[i].Account
+		ID := uint64(i)
+		toAccount(acc, retAccounts[i])
+		retAccounts[i].ID = ID
+	}
+
+	return retAccounts, nil
 }
-*/
+
+//GetBlocksMeta returns a group of blocks for faster access them
+func (g *Gallactic) GetBlocksMeta(from uint64, to uint64) ([]*BlockMeta, error) {
+	client := *g.client
+	blocks, getBlocksErr := client.GetBlocks(context.Background(), &pb.BlocksRequest{MinHeight: from, MaxHeight: to})
+	if getBlocksErr != nil {
+		return nil, getBlocksErr
+	}
+
+	n := len(blocks.BlockMeta)
+	retBlocks := make([]*BlockMeta, 0, n)
+	for i := 0; i < n; i++ {
+		toBlockMeta(&blocks.BlockMeta[i], retBlocks[i])
+	}
+
+	return retBlocks, nil
+}
+
+//GetBlocks returns a group of blocks for faster access them
+func (g *Gallactic) GetBlocks(from uint64, to uint64) ([]*Block, error) {
+	client := *g.client
+	blocks, getBlocksErr := client.GetBlocks(context.Background(), &pb.BlocksRequest{MinHeight: from, MaxHeight: to})
+	if getBlocksErr != nil {
+		return nil, getBlocksErr
+	}
+
+	n := len(blocks.BlockMeta)
+	retBlocks := make([]*Block, n)
+
+	for i := 0; i < n; i++ {
+		retBlocks[i] = new(Block)
+		BlockMetaToBlock(&blocks.BlockMeta[i], retBlocks[i])
+	}
+
+	return retBlocks, nil
+}

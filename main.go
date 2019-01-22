@@ -1,9 +1,11 @@
 package main
 
 import (
-	bc "github.com/gallactic/hubble_service/blockchain"
-	db "github.com/gallactic/hubble_service/database"
-	ex "github.com/gallactic/hubble_service/explorer"
+	"time"
+
+	bc "github.com/gallactic/hubble_server/blockchain"
+	db "github.com/gallactic/hubble_server/database"
+	ex "github.com/gallactic/hubble_server/explorer"
 )
 
 //TODO: var tConfig *config.Config
@@ -11,16 +13,23 @@ var lastReadBlockNumber int
 
 func main() {
 
+	start()
+
+}
+
+func start() {
 	bcAdapter := bc.Gallactic{}
-	dbAdapter := db.Postgre{Host: "localhost", Port: 5432, User: "postgres", Password: "gmpinc2007", DBname: "HubbleScan"}
+	dbAdapter := db.Postgre{Host: "localhost", Port: 5432, User: "postgres", Password: "123456", DBname: "HubbleScan"}
 	explorerEngine := ex.Explorer{BCAdapter: &bcAdapter, DBAdapter: &dbAdapter}
 
 	explorerEngine.Init()
 
-	/*
+	for {
 
-	 */
+		explorerEngine.Update()
+		time.Sleep(1000 * time.Millisecond)
 
+	}
 	/*
 		ret2, err2 := client.GetGenesis(context.Background(), &pb.Empty{})
 		if err2 == nil {

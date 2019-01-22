@@ -2,11 +2,55 @@ package blockchain
 
 import (
 	"encoding/hex"
+	"fmt"
 
+	github_com_gallactic_gallactic_core_account "github.com/gallactic/gallactic/core/account"
+	proto3 "github.com/gallactic/hubble_server/proto3"
 	github_com_tendermint_tendermint_types "github.com/tendermint/tendermint/types"
 )
 
-func toBlockMeta(meta *github_com_tendermint_tendermint_types.BlockMeta) *BlockMeta {
+func toAccount(acc *github_com_gallactic_gallactic_core_account.Account, retAccount *Account) {
+	code := fmt.Sprintf("%s", acc.Code())
+	//ID := uint64(i)
+
+	retAccount.Address = acc.Address().String()
+	retAccount.Balance = acc.Balance()
+	retAccount.Permission = acc.Permissions().String()
+	retAccount.Sequence = acc.Sequence()
+	retAccount.Code = code
+	//retAccount.ID = ID
+}
+
+//BlockMetaToBlock convert blockmeta struct to block struct
+func BlockMetaToBlock(meta *github_com_tendermint_tendermint_types.BlockMeta, dest *Block) {
+	header := meta.Header
+	blockID := meta.BlockID
+
+	dest.Hash = hex.EncodeToString(blockID.Hash)
+	dest.ChainID = header.ChainID
+	dest.Height = header.Height
+	dest.Time = header.Time
+	dest.TxCounts = header.NumTxs
+	dest.LastBlockHash = hex.EncodeToString(header.LastBlockID.Hash)
+}
+
+//toBlock convert BlockResponse to Block struct
+func toBlock(blockRes *proto3.BlockResponse, b *Block) {
+	blockMeta := blockRes.BlockMeta
+	blockID := blockMeta.BlockID
+	header := blockRes.Block.Header
+	//data := blockRes.Block.Data
+
+	b.Hash = hex.EncodeToString(blockID.Hash)
+	b.ChainID = header.ChainID
+	b.Height = header.Height
+	b.Time = header.Time
+	b.LastBlockHash = hex.EncodeToString(header.LastBlockID.Hash)
+	b.TxCounts = header.NumTxs
+}
+
+//toBlockMeta convert BlockMeta from tendermint to BlockMeta struct
+func toBlockMeta(meta *github_com_tendermint_tendermint_types.BlockMeta, b *BlockMeta) {
 	/* Tendermint Block Meta Structure
 	// basic block info
 	Version  version.Consensus `json:"version"`
@@ -39,54 +83,29 @@ func toBlockMeta(meta *github_com_tendermint_tendermint_types.BlockMeta) *BlockM
 	blockID := meta.BlockID
 
 	// block ID
-	BlockHeaderHash := hex.EncodeToString(blockID.Hash)
-	PartsSetTotal := blockID.PartsHeader.Total
-	PartsSetHash := hex.EncodeToString(blockID.PartsHeader.Hash)
+	b.BlockHash = hex.EncodeToString(blockID.Hash)
+	b.PartsSetTotal = blockID.PartsHeader.Total
+	b.PartsSetHash = hex.EncodeToString(blockID.PartsHeader.Hash)
 	// basic block info
-	VersionBlock := header.Version.Block.Uint64()
-	VersionApp := header.Version.App.Uint64()
-	ChainID := header.ChainID
-	Height := header.Height
-	Time := header.Time.String()
-	NumTxs := header.NumTxs
-	TotalTxs := header.TotalTxs
+	b.VersionBlock = header.Version.Block.Uint64()
+	b.VersionApp = header.Version.App.Uint64()
+	b.ChainID = header.ChainID
+	b.Height = header.Height
+	b.Time = header.Time
+	b.NumTxs = header.NumTxs
+	b.TotalTxs = header.TotalTxs
 	// prev block info
-	LastBlockID := hex.EncodeToString(header.LastBlockID.Hash)
+	b.LastBlockHash = hex.EncodeToString(header.LastBlockID.Hash)
 	// hashes of block data
-	LastCommitHash := hex.EncodeToString(header.LastCommitHash)
-	DataHash := hex.EncodeToString(header.DataHash)
+	b.LastCommitHash = hex.EncodeToString(header.LastCommitHash)
+	b.DataHash = hex.EncodeToString(header.DataHash)
 	// hashes from the app output from the prev block
-	ValidatorsHash := hex.EncodeToString(header.ValidatorsHash)
-	NextValidatorsHash := hex.EncodeToString(header.NextValidatorsHash)
-	ConsensusHash := hex.EncodeToString(header.ConsensusHash)
-	AppHash := hex.EncodeToString(header.AppHash)
-	LastResultsHash := hex.EncodeToString(header.LastResultsHash)
+	b.ValidatorsHash = hex.EncodeToString(header.ValidatorsHash)
+	b.NextValidatorsHash = hex.EncodeToString(header.NextValidatorsHash)
+	b.ConsensusHash = hex.EncodeToString(header.ConsensusHash)
+	b.AppHash = hex.EncodeToString(header.AppHash)
+	b.LastResultsHash = hex.EncodeToString(header.LastResultsHash)
 	// consensus info
-	EvidenceHash := hex.EncodeToString(header.EvidenceHash)
-	ProposerAddress := hex.EncodeToString(header.ProposerAddress)
-
-	var b *BlockMeta
-	b = &BlockMeta{
-		BlockHeaderHash:    BlockHeaderHash,
-		PartsSetTotal:      PartsSetTotal,
-		PartsSetHash:       PartsSetHash,
-		VersionBlock:       VersionBlock,
-		VersionApp:         VersionApp,
-		ChainID:            ChainID,
-		Height:             Height,
-		Time:               Time,
-		NumTxs:             NumTxs,
-		TotalTxs:           TotalTxs,
-		LastBlockID:        LastBlockID,
-		LastCommitHash:     LastCommitHash,
-		DataHash:           DataHash,
-		ValidatorsHash:     ValidatorsHash,
-		NextValidatorsHash: NextValidatorsHash,
-		ConsensusHash:      ConsensusHash,
-		AppHash:            AppHash,
-		LastResultsHash:    LastResultsHash,
-		EvidenceHash:       EvidenceHash,
-		ProposerAddress:    ProposerAddress}
-
-	return b
+	b.EvidenceHash = hex.EncodeToString(header.EvidenceHash)
+	b.ProposerAddress = hex.EncodeToString(header.ProposerAddress)
 }
