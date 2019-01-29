@@ -33,8 +33,6 @@ func (e *Explorer) Init() error {
 	}
 	println("Connected to database successfully!")
 
-	bcAdapter.GetTx(uint64(14141))
-
 	return nil
 }
 
