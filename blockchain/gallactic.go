@@ -2,6 +2,7 @@ package blockchain
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 
 	pb "github.com/gallactic/hubble_server/proto3"
@@ -78,9 +79,9 @@ func (g *Gallactic) GetBlock(height uint64) (*Block, error) {
 	if getBlockErr != nil {
 		return nil, getBlockErr
 	}
-
 	var b Block
 	toBlock(blockRes, &b)
+
 	return &b, nil
 }
 
@@ -150,4 +151,128 @@ func (g *Gallactic) GetBlocks(from uint64, to uint64) ([]*Block, error) {
 	}
 
 	return retBlocks, nil
+}
+
+/*
+type BlockTxsResponse struct {
+	Count                int32                                         `protobuf:"varint,1,opt,name=Count,proto3" json:"Count,omitempty"`
+	Txs                  []github_com_gallactic_gallactic_txs.Envelope `protobuf:"bytes,3,rep,name=Txs,proto3,customtype=github.com/gallactic/gallactic/txs.Envelope" json:"Txs,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}                                      `json:"-"`
+	XXX_unrecognized     []byte                                        `json:"-"`
+	XXX_sizecache        int32                                         `json:"-"`
+}
+
+type Envelope struct {
+	ChainID     string             `json:"chainId"`
+	Type        tx.Type            `json:"type"`
+	Tx          tx.Tx              `json:"tx"`
+	Signatories []crypto.Signatory `json:"signatories,omitempty"`
+	hash        []byte
+}
+
+type Signatory struct {
+	PublicKey PublicKey `json:"publicKey"`
+	Signature Signature `json:"signature"`
+}
+type Signature struct {
+	data signatureData
+}
+
+type signatureData struct {
+	Signature []byte `json:"signature"`
+}
+
+
+type Tx interface {
+	Signers() []TxInput
+	Type() Type
+	Amount() uint64
+	Fee() uint64
+	EnsureValid() error
+}
+
+
+type TxInput struct {
+	Address  crypto.Address `json:"address"`
+	Amount   uint64         `json:"amount"`
+	Sequence uint64         `json:"sequence"`
+}
+
+
+	if txs.Txs[0].Tx.Type() == 1 {
+		sndTx := txs.Txs[0].Tx
+		println(sndTx.Amount())
+	}
+	println("TX Count: ", txs.Count)
+	println("TX Chain ID: ", txs.Txs[0].ChainID)
+	println("TX Hash: ", hex.EncodeToString(txs.Txs[0].Hash()))
+	println("TX Signatories Public Key: ", txs.Txs[0].Signatories[0].PublicKey.String())
+	println("TX Signatories ACC Address: ", txs.Txs[0].Signatories[0].PublicKey.AccountAddress().String())
+	println("TX Signatories VAL Address: ", txs.Txs[0].Signatories[0].PublicKey.ValidatorAddress().String())
+	println("TX Signatories Signature: ", txs.Txs[0].Signatories[0].Signature.String())
+	println("Num Signers: ", len(txs.Txs[0].Tx.Signers()))
+	println("TX Signers Address: ", txs.Txs[0].Tx.Signers()[0].Address.String())
+	println("TX Signers Amount: ", txs.Txs[0].Tx.Signers()[0].Amount)
+	println("TX Signers Sequence: ", txs.Txs[0].Tx.Signers()[0].Sequence)
+	println("TX Amount: ", txs.Txs[0].Tx.Amount())
+	println("TX Type: ", txs.Txs[0].Tx.Type())
+	println("TX Type Striing: ", txs.Txs[0].Tx.Type().String())
+	println("TX Fee: ", txs.Txs[0].Tx.Fee())
+	println("TX Err: ", txs.Txs[0].Tx.EnsureValid())
+*/
+
+//GetTXsCount returns number of TXs
+func (g *Gallactic) GetTXsCount(height uint64) int {
+	client := *g.client
+	txs, _ := client.GetBlockTxs(context.Background(), &pb.BlockRequest{Height: height})
+	n := int(txs.Count)
+	return n
+}
+
+//GetTx returns specified TX
+func (g *Gallactic) GetTx(height uint64, hash []byte) (*Transaction, error) {
+	client := *g.client
+	txs, getTXsErr := client.GetBlockTxs(context.Background(), &pb.BlockRequest{Height: height})
+	if getTXsErr != nil {
+		return nil, getTXsErr
+	}
+
+	block, _ := g.GetBlock(height)
+	findHash := hex.EncodeToString(hash)
+	n := int(txs.Count)
+	var retTXs *Transaction
+	for i := 0; i < n; i++ {
+		txHash := hex.EncodeToString(txs.Txs[i].Hash())
+		if txHash == findHash {
+			retTXs.BlockID = height
+			retTXs.Hash = txHash
+			retTXs.Type = txs.Txs[i].Tx.Type().String()
+			retTXs.Data = "" //TODO: fix data
+			retTXs.Time = block.Time
+		}
+	}
+
+	return retTXs, nil
+}
+
+//GetTXs returns all transaction of specific block
+func (g *Gallactic) GetTXs(height uint64) ([]*Transaction, error) {
+	client := *g.client
+	txs, getTXsErr := client.GetBlockTxs(context.Background(), &pb.BlockRequest{Height: height})
+	if getTXsErr != nil {
+		return nil, getTXsErr
+	}
+
+	block, _ := g.GetBlock(height)
+	n := int(txs.Count)
+	retTXs := make([]*Transaction, n)
+	for i := 0; i < n; i++ {
+		retTXs[i].BlockID = height
+		retTXs[i].Hash = hex.EncodeToString(txs.Txs[i].Hash())
+		retTXs[i].Type = txs.Txs[i].Tx.Type().String()
+		retTXs[i].Data = "" //TODO: fix data
+		retTXs[i].Time = block.Time
+	}
+
+	return retTXs, nil
 }

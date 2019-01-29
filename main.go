@@ -30,6 +30,7 @@ func start() {
 		time.Sleep(1000 * time.Millisecond)
 
 	}
+
 	/*
 		ret2, err2 := client.GetGenesis(context.Background(), &pb.Empty{})
 		if err2 == nil {

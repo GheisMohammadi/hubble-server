@@ -54,6 +54,15 @@ type Block struct {
 	TxCounts      int64
 }
 
+//Transaction struct
+type Transaction struct {
+	BlockID uint64
+	Hash    string
+	Type    string
+	Data    string
+	Time    time.Time
+}
+
 //Adapter for data base
 type Adapter interface {
 	CreateGRPCClient() error
@@ -69,4 +78,8 @@ type Adapter interface {
 	GetBlock(height uint64) (*Block, error)
 	GetBlocksMeta(from uint64, to uint64) ([]*BlockMeta, error)
 	GetBlocks(from uint64, to uint64) ([]*Block, error)
+
+	GetTXsCount(height uint64) int
+	GetTx(height uint64, hash []byte) (*Transaction, error)
+	GetTXs(height uint64) ([]*Transaction, error)
 }

@@ -23,6 +23,7 @@ func (e *Explorer) Init() error {
 	} else {
 		return clientErr
 	}
+	bcAdapter.Update()
 
 	//connect to database
 	dbAdapter := e.DBAdapter
@@ -31,6 +32,9 @@ func (e *Explorer) Init() error {
 		return connErr
 	}
 	println("Connected to database successfully!")
+
+	bcAdapter.GetTx(uint64(14141))
+
 	return nil
 }
 
@@ -57,12 +61,12 @@ func (e *Explorer) Update() error {
 	}
 
 	if currentHeight > lastBlockIDInDB {
-		//Read blocks
-		//fmt.Printf("\r%d%% saved!", perc, startIndex-lastBlockIDInDB, d)
-
-		//println("Saving new blocks ", lastBlockIDInDB, " to ", currentHeight, " in database...")
 		d := currentHeight - lastBlockIDInDB
 		n := int(d / 1000)
+		if d > 1000 {
+			println("Saving new blocks number", lastBlockIDInDB, " to ", currentHeight, " in database...")
+		}
+
 		var startIndex uint64
 		var endIndex uint64
 
@@ -78,7 +82,7 @@ func (e *Explorer) Update() error {
 				endIndex = currentHeight
 			}
 			blocks, _ := bcAdapter.GetBlocks(startIndex, endIndex)
-			savingErr := e.saveBlocksInDB(blocks, dbAdapter)
+			savingErr := e.saveBlocksInDB(blocks, bcAdapter, dbAdapter)
 			if savingErr != nil {
 				return savingErr
 			}
@@ -94,7 +98,7 @@ func (e *Explorer) Update() error {
 	return nil
 }
 
-func (e *Explorer) saveBlocksInDB(blocks []*bc.Block, dbAdapter db.Adapter) error {
+func (e *Explorer) saveBlocksInDB(blocks []*bc.Block, bcAdapter bc.Adapter, dbAdapter db.Adapter) error {
 	l := len(blocks)
 	if l <= 0 {
 		return fmt.Errorf("Empty Blocks Array")
@@ -106,7 +110,31 @@ func (e *Explorer) saveBlocksInDB(blocks []*bc.Block, dbAdapter db.Adapter) erro
 			return err
 		}
 		if block.TxCounts > 0 {
-			//println("block ", block.Height, " has ", block.TxCounts, " transactions!")
+			errTxSave := e.saveBlockTXsInDB(block, bcAdapter, dbAdapter)
+			if errTxSave != nil {
+				return errTxSave
+			}
+		}
+	}
+	return nil
+}
+
+func (e *Explorer) saveBlockTXsInDB(block *bc.Block, bcAdapter bc.Adapter, dbAdapter db.Adapter) error {
+	l := block.TxCounts
+	if l <= 0 {
+		return fmt.Errorf("Empty TXs Array")
+	}
+
+	height := uint64(block.Height)
+	txs, errTXs := bcAdapter.GetTXs(height)
+	if errTXs != nil {
+		return errTXs
+	}
+
+	for i := l - 1; i >= 0; i-- {
+		err := dbAdapter.InsertTx(txs[i])
+		if err != nil {
+			return err
 		}
 	}
 	return nil

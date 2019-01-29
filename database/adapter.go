@@ -22,9 +22,8 @@ type Adapter interface {
 	GetBlocksTableLastID() (uint64, error)
 
 	//Transactions Handling
-	InsertTx(b *hsBC.Block) error
-	UpdateTx(id int, b *hsBC.Block) error
-	GetTx(id int) (*hsBC.Block, error)
+	InsertTx(b *hsBC.Transaction) error
+	UpdateTx(id int, b *hsBC.Transaction) error
+	GetTx(hash string) (*hsBC.Transaction, error)
 	GetTXsTableLastID() (uint64, error)
-
 }
