@@ -5,22 +5,21 @@ import (
 	"fmt"
 
 	hsBC "github.com/gallactic/hubble_server/blockchain"
+	config "github.com/gallactic/hubble_server/config"
 	_ "github.com/lib/pq" //dependency for postgre
 )
 
 //Postgre adapter
 type Postgre struct {
-	Host     string  //"localhost"
-	Port     int     //5432
-	User     string  //"postgres"
-	Password string  //"your-password"
-	DBname   string  //"calhounio_demo"
-	ObjDB    *sql.DB //Opened DB
+	Config *config.Config
+	ObjDB  *sql.DB //Opened DB
 }
 
 //Connect to database
 func (obe *Postgre) Connect() error {
-	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", obe.Host, obe.Port, obe.User, obe.Password, obe.DBname)
+	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
+		obe.Config.DataBase.Host, obe.Config.DataBase.Port, obe.Config.DataBase.User,
+		obe.Config.DataBase.Password, obe.Config.DataBase.DBName)
 
 	var err error
 	obe.ObjDB, err = sql.Open("postgres", psqlInfo)

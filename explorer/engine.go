@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	bc "github.com/gallactic/hubble_server/blockchain"
+	config "github.com/gallactic/hubble_server/config"
 	db "github.com/gallactic/hubble_server/database"
 )
 
@@ -11,6 +12,7 @@ import (
 type Explorer struct {
 	BCAdapter bc.Adapter
 	DBAdapter db.Adapter
+	Config    *config.Config
 }
 
 //Init to initialize database and block chain
@@ -32,6 +34,12 @@ func (e *Explorer) Init() error {
 		return connErr
 	}
 	println("Connected to database successfully!")
+
+	blk, _ := bcAdapter.GetBlock(uint64(14141))
+	txs, _ := bcAdapter.GetTXs(uint64(14141))
+
+	println("BLOCK--> ", blk.TxCounts)
+	dbAdapter.InsertTx(txs[0])
 
 	return nil
 }

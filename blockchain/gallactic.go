@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 
+	config "github.com/gallactic/hubble_server/config"
 	pb "github.com/gallactic/hubble_server/proto3"
 	"google.golang.org/grpc"
 )
@@ -14,12 +15,14 @@ type Gallactic struct {
 	client   *pb.BlockChainClient
 	blocks   *pb.BlocksResponse
 	accounts *pb.AccountsResponse
+	Config   *config.Config
 }
 
 //CreateGRPCClient creates a client for communicating with gallactic blockchain
 func (g *Gallactic) CreateGRPCClient() error {
-	addr := "68.183.183.19:50500" //TODO: add tConfig.GRPC.ListenAddress
-	conn, err := grpc.Dial(addr, grpc.WithInsecure())
+	var connURL string
+	connURL = g.Config.GRPC.URL + ":" + g.Config.GRPC.Port
+	conn, err := grpc.Dial(connURL, grpc.WithInsecure())
 	if err != nil {
 		return err
 	}
@@ -260,15 +263,18 @@ func (g *Gallactic) GetTXs(height uint64) ([]*Transaction, error) {
 	client := *g.client
 	txs, getTXsErr := client.GetBlockTxs(context.Background(), &pb.BlockRequest{Height: height})
 	if getTXsErr != nil {
+		println("Get TXs ERR -> ", getTXsErr.Error())
 		return nil, getTXsErr
 	}
 
 	block, _ := g.GetBlock(height)
 	n := int(txs.Count)
+	println("NUM TXs: ", n)
 	retTXs := make([]*Transaction, n)
 	for i := 0; i < n; i++ {
 		retTXs[i].BlockID = height
 		retTXs[i].Hash = hex.EncodeToString(txs.Txs[i].Hash())
+		println("TX HASH->", retTXs[i].Hash)
 		retTXs[i].Type = txs.Txs[i].Tx.Type().String()
 		retTXs[i].Data = "" //TODO: fix data
 		retTXs[i].Time = block.Time
