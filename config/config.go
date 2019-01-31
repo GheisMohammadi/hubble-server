@@ -42,7 +42,7 @@ func DefaultGRPCConfig() *GRPCConfig {
 	return &GRPCConfig{
 		Name: "Gallactic",
 		URL:  "68.183.183.19",
-		Port: "50500",
+		Port: "50052",
 	}
 }
 

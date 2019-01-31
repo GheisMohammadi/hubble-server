@@ -15,6 +15,7 @@ var gConfig *config.Config
 func main() {
 
 	Init()
+	SyncLoop()
 
 }
 
