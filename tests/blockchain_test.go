@@ -4,16 +4,26 @@ import (
 	"testing"
 
 	bc "github.com/gallactic/hubble_server/blockchain"
+	config "github.com/gallactic/hubble_server/config"
 	"github.com/stretchr/testify/require"
 )
 
 func TestBlockChain(t *testing.T) {
+
+	gConfig, _ := config.LoadConfigFile(true)
+	bc := bc.Gallactic{Config: gConfig}
 
 	clientErr := bc.CreateGRPCClient()
 	require.NoError(t, clientErr)
 
 	updateErr := bc.Update()
 	require.NoError(t, updateErr)
+
+	_, getBlockErr := bc.GetBlock(uint64(14141))
+	require.NoError(t, getBlockErr)
+
+	_, getTXsErr := bc.GetTXs(uint64(14141))
+	require.NoError(t, getTXsErr)
 
 	/*
 		ret1, err := bc.GetAccounts()

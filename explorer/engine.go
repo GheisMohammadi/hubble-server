@@ -35,12 +35,6 @@ func (e *Explorer) Init() error {
 	}
 	println("Connected to database successfully!")
 
-	blk, _ := bcAdapter.GetBlock(uint64(14141))
-	txs, _ := bcAdapter.GetTXs(uint64(14141))
-
-	println("BLOCK--> ", blk.TxCounts)
-	dbAdapter.InsertTx(txs[0])
-
 	return nil
 }
 

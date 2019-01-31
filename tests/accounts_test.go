@@ -3,13 +3,15 @@ package tests
 import (
 	"testing"
 
+	config "github.com/gallactic/hubble_server/config"
 	db "github.com/gallactic/hubble_server/database"
 	"github.com/stretchr/testify/require"
 )
 
 func TestAccountsInDataBase(t *testing.T) {
 
-	dbe := db.Postgre{Host: "localhost", Port: 5432, User: "postgres", Password: "gmpinc2007", DBname: "HubbleScan"}
+	gConfig, _ := config.LoadConfigFile(true)
+	dbe := db.Postgre{Config: gConfig}
 	connErr := dbe.Connect()
 	require.NoError(t, connErr)
 
