@@ -79,7 +79,7 @@ CREATE TABLE public.blocks (
     id integer NOT NULL,
     height integer,
     hash character varying(256),
-    "chainid" text,
+    chainid text,
     "time" timestamp without time zone,
     lastblockhash character varying(256),
     txcounts integer
@@ -118,9 +118,10 @@ CREATE TABLE public.transactions (
     id integer NOT NULL,
     block_id integer,
     txhash character varying(256),
-    txtype character varying(256),
-    raw_data character varying(256),
-    time_stamp timestamp without time zone
+    gas_used bigint,
+    gas_wanted bigint,
+    data character varying(256),
+    "time" timestamp without time zone
 );
 
 
@@ -247,4 +248,3 @@ ALTER TABLE ONLY public.txn_relation
 --
 -- PostgreSQL database dump complete
 --
-
