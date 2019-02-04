@@ -153,11 +153,11 @@ func (obe *Postgre) GetBlocksTableLastID() (uint64, error) {
 
 //InsertTx add a transaction in database
 func (obe *Postgre) InsertTx(b *hsBC.Transaction) error {
-	sqlStatement := `INSERT INTO transactions (block_id, txhash, txType, raw_data, time_stamp)
-	VALUES ($1, $2, $3, $4, $5)
+	sqlStatement := `INSERT INTO transactions (block_id, txhash, gas_used,gas_wanted,data, time)
+	VALUES ($1, $2, $3, $4, $5, $6)
 	RETURNING id`
 	id := 0
-	row := obe.ObjDB.QueryRow(sqlStatement, b.BlockID, b.Hash, b.Type, b.Data, b.Time)
+	row := obe.ObjDB.QueryRow(sqlStatement, b.BlockID, b.Hash, b.GasUsed, b.GasWanted, b.Data, b.Time)
 	err := row.Scan(&id)
 	if err != nil {
 		return err
@@ -168,12 +168,12 @@ func (obe *Postgre) InsertTx(b *hsBC.Transaction) error {
 //UpdateTx modifies a transaction data in database
 func (obe *Postgre) UpdateTx(id int, b *hsBC.Transaction) error {
 	sqlStatement := `UPDATE transactions
-	SET block_id = $2, txhash = $3, txtype = $4, raw_data = $5, time_stamp = $6
+	SET block_id = $2, txhash = $3, gas_used = $4, gas_wanted = $5, data = $6, time = $7
 	WHERE id = $1
 	RETURNING id, txhash;`
 	var retHash string
 	var retID int
-	err := obe.ObjDB.QueryRow(sqlStatement, id, b.BlockID, b.Hash, b.Type, b.Data, b.Time).Scan(&retID, &retHash)
+	err := obe.ObjDB.QueryRow(sqlStatement, id, b.BlockID, b.Hash, b.GasUsed, b.GasWanted, b.Data, b.Time).Scan(&retID, &retHash)
 
 	if err != nil {
 		return err
@@ -184,10 +184,10 @@ func (obe *Postgre) UpdateTx(id int, b *hsBC.Transaction) error {
 
 //GetTx returns a transaction data
 func (obe *Postgre) GetTx(hash string) (*hsBC.Transaction, error) {
-	sqlStatement := `SELECT block_id,txhash,txtype,raw_data,time_stamp FROM transactions
+	sqlStatement := `SELECT block_id,txhash,gas_used,gas_wanted,data,time FROM transactions
 					 WHERE txhash=$1;`
 	var tx hsBC.Transaction
-	obe.ObjDB.QueryRow(sqlStatement, hash).Scan(&tx.BlockID, &tx.Hash, &tx.Type, &tx.Data, &tx.Time)
+	obe.ObjDB.QueryRow(sqlStatement, hash).Scan(&tx.BlockID, &tx.Hash, &tx.GasUsed, &tx.GasWanted, &tx.Data, &tx.Time)
 
 	return &tx, nil
 }

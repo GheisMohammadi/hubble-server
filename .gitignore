@@ -6,6 +6,8 @@
 
 Gopkg.lock
 
+tests/config.toml
+
 # vendors
 vendor/*
 

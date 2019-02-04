@@ -13,7 +13,8 @@ GOTOOLS = \
 	github.com/grpc-ecosystem/grpc-gateway/protoc-gen-swagger \
 	github.com/lib/pq
 
-PROTOPATH = --proto_path=${GOPATH}/src:${GOPATH}/src/github.com/gogo/protobuf/protobuf:.
+PROTOPATH = -I=. -I=${GOPATH}/src -I=${GOPATH}/src/github.com/gogo/protobuf/protobuf:. -I=${GOPATH}/src/github.com/gallactic/gallactic/rpc/grpc/proto3 -I=${GOPATH}/src/github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis
+#--proto_path=${GOPATH}/src:${GOPATH}/src/github.com/gogo/protobuf/protobuf:.
 HUBBLE = ${GOPATH}/src/github.com/gallactic/hubble_server
 
 ########################################
@@ -35,7 +36,7 @@ tools:
 ### Protobuf
 proto:
 
-	--protoc $(PROTOPATH) --gogo_out=plugins=grpc:$(HUBBLE)/proto3 ./blockchain.proto
+	--protoc $(PROTOPATH) --gogo_out=plugins=grpc:$(HUBBLE) ./proto3/blockchain.proto
 
 ########################################
 ### Formatting, linting, and vetting

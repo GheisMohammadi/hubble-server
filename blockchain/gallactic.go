@@ -15,6 +15,7 @@ type Gallactic struct {
 	client   *pb.BlockChainClient
 	blocks   *pb.BlocksResponse
 	accounts *pb.AccountsResponse
+	chain    *pb.BlockchainInfoResponse
 	Config   *config.Config
 }
 
@@ -33,29 +34,23 @@ func (g *Gallactic) CreateGRPCClient() error {
 
 //Update will refresh all data and sync with block chain
 func (g *Gallactic) Update() error {
-	var getBlocksErr error
-	var getAccountsErr error
 	client := *g.client
-
-	g.blocks, getBlocksErr = client.GetBlocks(context.Background(), &pb.BlocksRequest{})
-	if getBlocksErr != nil {
-		return getBlocksErr
+	var chainInfoErr error
+	g.chain, chainInfoErr = client.GetBlockchainInfo(context.Background(), &pb.Empty{})
+	if chainInfoErr != nil {
+		return chainInfoErr
 	}
 
-	g.accounts, getAccountsErr = client.GetAccounts(context.Background(), &pb.Empty{})
-	if getAccountsErr != nil {
-		return getAccountsErr
-	}
 	return nil
 }
 
 //GetBlocksLastHeight return last height
-func (g *Gallactic) GetBlocksLastHeight() uint64 {
-	return g.blocks.GetLastHeight()
+func (g *Gallactic) GetBlocksLastHeight() (uint64, error) {
+	return g.chain.GetLastBlockHeight(), nil
 }
 
-//GetBlockMeta returns specified block
-func (g *Gallactic) GetBlockMeta(height uint64) (*BlockMeta, error) {
+//GetBlockInfo returns specified block
+func (g *Gallactic) GetBlockInfo(height uint64) (*BlockInfo, error) {
 
 	client := *g.client
 	blockRes, getBlockErr := client.GetBlock(context.Background(), &pb.BlockRequest{Height: height})
@@ -63,18 +58,21 @@ func (g *Gallactic) GetBlockMeta(height uint64) (*BlockMeta, error) {
 		return nil, getBlockErr
 	}
 
-	blockMeta := blockRes.BlockMeta
-
-	var meta BlockMeta
-	toBlockMeta(blockMeta, &meta)
-	return &meta, nil
+	header := blockRes.GetBlock().GetHeader()
+	var inf BlockInfo
+	toBlockInfo(header, &inf)
+	return &inf, nil
 }
 
 //GetBlock returns specified block
 func (g *Gallactic) GetBlock(height uint64) (*Block, error) {
 
-	if height > g.blocks.GetLastHeight() {
-		return nil, fmt.Errorf("block height out of range (max is " + string(g.blocks.GetLastHeight()) + ")")
+	lastID, lastIDErr := g.GetBlocksLastHeight()
+	if lastIDErr != nil {
+		return nil, lastIDErr
+	}
+	if height > lastID {
+		return nil, fmt.Errorf("block height out of range (max is " + string(lastID) + ")")
 	}
 
 	client := *g.client
@@ -120,18 +118,18 @@ func (g *Gallactic) GetAccounts() ([]*Account, error) {
 	return retAccounts, nil
 }
 
-//GetBlocksMeta returns a group of blocks for faster access them
-func (g *Gallactic) GetBlocksMeta(from uint64, to uint64) ([]*BlockMeta, error) {
+//GetBlocksInfo returns a group of blocks for faster access them
+func (g *Gallactic) GetBlocksInfo(from uint64, to uint64) ([]*BlockInfo, error) {
 	client := *g.client
 	blocks, getBlocksErr := client.GetBlocks(context.Background(), &pb.BlocksRequest{MinHeight: from, MaxHeight: to})
 	if getBlocksErr != nil {
 		return nil, getBlocksErr
 	}
 
-	n := len(blocks.BlockMeta)
-	retBlocks := make([]*BlockMeta, 0, n)
+	n := len(blocks.GetBlocks())
+	retBlocks := make([]*BlockInfo, 0, n)
 	for i := 0; i < n; i++ {
-		toBlockMeta(&blocks.BlockMeta[i], retBlocks[i])
+		toBlockInfo(blocks.GetBlocks()[i].GetHeader(), retBlocks[i])
 	}
 
 	return retBlocks, nil
@@ -145,12 +143,12 @@ func (g *Gallactic) GetBlocks(from uint64, to uint64) ([]*Block, error) {
 		return nil, getBlocksErr
 	}
 
-	n := len(blocks.BlockMeta)
+	n := len(blocks.GetBlocks())
 	retBlocks := make([]*Block, n)
 
 	for i := 0; i < n; i++ {
 		retBlocks[i] = new(Block)
-		BlockMetaToBlock(&blocks.BlockMeta[i], retBlocks[i])
+		BlockInfoToBlock(blocks.GetBlocks()[i].GetHeader(), retBlocks[i])
 	}
 
 	return retBlocks, nil
@@ -234,48 +232,46 @@ func (g *Gallactic) GetTXsCount(height uint64) int {
 
 //GetTx returns specified TX
 func (g *Gallactic) GetTx(height uint64, hash []byte) (*Transaction, error) {
+
 	client := *g.client
-	txs, getTXsErr := client.GetBlockTxs(context.Background(), &pb.BlockRequest{Height: height})
-	if getTXsErr != nil {
-		return nil, getTXsErr
-	}
 
-	block, _ := g.GetBlock(height)
+	blockRes, getBlockErr := client.GetBlock(context.Background(), &pb.BlockRequest{Height: height})
+	if getBlockErr != nil {
+		return nil, getBlockErr
+	}
+	var b Block
+	toBlock(blockRes, &b)
+
 	findHash := hex.EncodeToString(hash)
-	n := int(txs.Count)
-	var retTXs *Transaction
-	for i := 0; i < n; i++ {
-		txHash := hex.EncodeToString(txs.Txs[i].Hash())
-		if txHash == findHash {
-			retTXs.BlockID = height
-			retTXs.Hash = txHash
-			retTXs.Type = txs.Txs[i].Tx.Type().String()
-			retTXs.Data = "" //TODO: fix data
-			retTXs.Time = block.Time
-		}
+	txRes, getTxErr := client.GetTx(context.Background(), &pb.TxRequest{TxHash: findHash})
+	if getTxErr != nil {
+		return nil, getTxErr
 	}
 
-	return retTXs, nil
+	var tx Transaction
+	toTx(txRes, &tx)
+	tx.Time = b.Time
+	tx.BlockID = int64(height)
+
+	return &tx, nil
 }
 
 //GetTXs returns all transaction of specific block
-func (g *Gallactic) GetTXs(height uint64) ([]*Transaction, error) {
+func (g *Gallactic) GetTXs(height uint64) ([]Transaction, error) {
 	client := *g.client
 	txs, getTXsErr := client.GetBlockTxs(context.Background(), &pb.BlockRequest{Height: height})
 	if getTXsErr != nil {
-		println("Get TXs ERR -> ", getTXsErr.Error())
 		return nil, getTXsErr
 	}
 
 	block, _ := g.GetBlock(height)
 	n := int(txs.Count)
-	println("NUM TXs: ", n)
-	retTXs := make([]*Transaction, n)
+	retTXs := make([]Transaction, n)
 	for i := 0; i < n; i++ {
-		retTXs[i].BlockID = height
-		retTXs[i].Hash = hex.EncodeToString(txs.Txs[i].Hash())
-		println("TX HASH->", retTXs[i].Hash)
-		retTXs[i].Type = txs.Txs[i].Tx.Type().String()
+		retTXs[i].BlockID = int64(height)
+		retTXs[i].Hash = txs.Txs[i].Hash
+		retTXs[i].GasUsed = txs.Txs[i].GetGasUsed()
+		retTXs[i].GasWanted = txs.Txs[i].GetGasWanted()
 		retTXs[i].Data = "" //TODO: fix data
 		retTXs[i].Time = block.Time
 	}

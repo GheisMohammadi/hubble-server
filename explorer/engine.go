@@ -52,7 +52,10 @@ func (e *Explorer) Update() error {
 	}
 
 	//Get current height of last block
-	currentHeight := bcAdapter.GetBlocksLastHeight()
+	currentHeight, getLastHeightErr := bcAdapter.GetBlocksLastHeight()
+	if getLastHeightErr != nil {
+		return getLastHeightErr
+	}
 
 	//Get last block ID that is saved
 	lastBlockIDInDB, getLastIDError := dbAdapter.GetBlocksTableLastID()
@@ -92,7 +95,11 @@ func (e *Explorer) Update() error {
 
 		}
 
-		fmt.Printf("\r%d blocks saved!", currentHeight)
+		if d > 1000 {
+			println("\r", d, "new blocks saved!")
+		} else {
+			fmt.Printf("\r%d blocks saved!", currentHeight)
+		}
 	}
 
 	return nil
@@ -122,7 +129,7 @@ func (e *Explorer) saveBlocksInDB(blocks []*bc.Block, bcAdapter bc.Adapter, dbAd
 func (e *Explorer) saveBlockTXsInDB(block *bc.Block, bcAdapter bc.Adapter, dbAdapter db.Adapter) error {
 	l := block.TxCounts
 	if l <= 0 {
-		return fmt.Errorf("Empty TXs Array")
+		return fmt.Errorf("Empty Transactions Array")
 	}
 
 	height := uint64(block.Height)
@@ -132,7 +139,7 @@ func (e *Explorer) saveBlockTXsInDB(block *bc.Block, bcAdapter bc.Adapter, dbAda
 	}
 
 	for i := l - 1; i >= 0; i-- {
-		err := dbAdapter.InsertTx(txs[i])
+		err := dbAdapter.InsertTx(&txs[i])
 		if err != nil {
 			return err
 		}

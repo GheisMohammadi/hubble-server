@@ -33,10 +33,14 @@ func Init() {
 func SyncLoop() {
 
 	interval := time.Duration(gConfig.App.CheckingInterval)
+	println("syncing every", interval, "miliseconds...")
 
 	for {
 
-		explorerEngine.Update()
+		errUpdate := explorerEngine.Update()
+		if errUpdate != nil {
+			println("Updating engine erro: ", errUpdate.Error())
+		}
 		time.Sleep(interval * time.Millisecond)
 
 	}

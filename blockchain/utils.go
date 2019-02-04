@@ -5,8 +5,8 @@ import (
 	"fmt"
 
 	github_com_gallactic_gallactic_core_account "github.com/gallactic/gallactic/core/account"
+	pb "github.com/gallactic/hubble_server/proto3"
 	proto3 "github.com/gallactic/hubble_server/proto3"
-	github_com_tendermint_tendermint_types "github.com/tendermint/tendermint/types"
 )
 
 func toAccount(acc *github_com_gallactic_gallactic_core_account.Account, retAccount *Account) {
@@ -21,36 +21,30 @@ func toAccount(acc *github_com_gallactic_gallactic_core_account.Account, retAcco
 	//retAccount.ID = ID
 }
 
-//BlockMetaToBlock convert blockmeta struct to block struct
-func BlockMetaToBlock(meta *github_com_tendermint_tendermint_types.BlockMeta, dest *Block) {
-	header := meta.Header
-	blockID := meta.BlockID
-
-	dest.Hash = hex.EncodeToString(blockID.Hash)
+//BlockInfoToBlock convert blockmeta struct to block struct
+func BlockInfoToBlock(header pb.HeaderInfo, dest *Block) {
+	dest.Hash = hex.EncodeToString(header.BlockHash)
 	dest.ChainID = header.ChainID
 	dest.Height = header.Height
 	dest.Time = header.Time
 	dest.TxCounts = header.NumTxs
-	dest.LastBlockHash = hex.EncodeToString(header.LastBlockID.Hash)
+	dest.LastBlockHash = hex.EncodeToString(header.GetLastBlockId())
 }
 
 //toBlock convert BlockResponse to Block struct
 func toBlock(blockRes *proto3.BlockResponse, b *Block) {
-	blockMeta := blockRes.BlockMeta
-	blockID := blockMeta.BlockID
-	header := blockRes.Block.Header
-	//data := blockRes.Block.Data
+	header := blockRes.GetBlock().GetHeader()
 
-	b.Hash = hex.EncodeToString(blockID.Hash)
+	b.Hash = hex.EncodeToString(header.BlockHash)
 	b.ChainID = header.ChainID
 	b.Height = header.Height
 	b.Time = header.Time
-	b.LastBlockHash = hex.EncodeToString(header.LastBlockID.Hash)
+	b.LastBlockHash = hex.EncodeToString(header.GetLastBlockId())
 	b.TxCounts = header.NumTxs
 }
 
-//toBlockMeta convert BlockMeta from tendermint to BlockMeta struct
-func toBlockMeta(meta *github_com_tendermint_tendermint_types.BlockMeta, b *BlockMeta) {
+//toBlockInfo convert BlockMeta from tendermint to BlockMeta struct
+func toBlockInfo(header pb.HeaderInfo, b *BlockInfo) {
 	/* Tendermint Block Meta Structure
 	// basic block info
 	Version  version.Consensus `json:"version"`
@@ -79,23 +73,18 @@ func toBlockMeta(meta *github_com_tendermint_tendermint_types.BlockMeta, b *Bloc
 	ProposerAddress Address      `json:"proposer_address"` // original proposer of the block
 	*/
 
-	header := meta.Header
-	blockID := meta.BlockID
-
 	// block ID
-	b.BlockHash = hex.EncodeToString(blockID.Hash)
-	b.PartsSetTotal = blockID.PartsHeader.Total
-	b.PartsSetHash = hex.EncodeToString(blockID.PartsHeader.Hash)
+	b.BlockHash = hex.EncodeToString(header.BlockHash)
 	// basic block info
-	b.VersionBlock = header.Version.Block.Uint64()
-	b.VersionApp = header.Version.App.Uint64()
+	b.VersionBlock = header.GetVersion().Block
+	b.VersionApp = header.GetVersion().App
 	b.ChainID = header.ChainID
 	b.Height = header.Height
 	b.Time = header.Time
 	b.NumTxs = header.NumTxs
 	b.TotalTxs = header.TotalTxs
 	// prev block info
-	b.LastBlockHash = hex.EncodeToString(header.LastBlockID.Hash)
+	b.LastBlockHash = hex.EncodeToString(header.LastBlockId)
 	// hashes of block data
 	b.LastCommitHash = hex.EncodeToString(header.LastCommitHash)
 	b.DataHash = hex.EncodeToString(header.DataHash)
@@ -107,5 +96,15 @@ func toBlockMeta(meta *github_com_tendermint_tendermint_types.BlockMeta, b *Bloc
 	b.LastResultsHash = hex.EncodeToString(header.LastResultsHash)
 	// consensus info
 	b.EvidenceHash = hex.EncodeToString(header.EvidenceHash)
-	b.ProposerAddress = hex.EncodeToString(header.ProposerAddress)
+	b.ProposerAddress = header.GetProposerAddress()
+}
+
+//toBlock convert BlockResponse to Block struct
+func toTx(TxRes *proto3.TxResponse , tx *Transaction) {
+
+	tx.BlockID=TxRes.GetTx().GetHeight()
+	tx.GasUsed=TxRes.GetTx().GetGasUsed()
+	tx.GasWanted=TxRes.GetTx().GetGasWanted()
+	tx.Hash=TxRes.GetTx().GetHash()
+
 }

@@ -14,12 +14,10 @@ type Account struct {
 	ID         uint64
 }
 
-//BlockMeta struct in blocks
-type BlockMeta struct {
+//BlockInfo struct in blocks
+type BlockInfo struct {
 	//block ID
-	BlockHash     string
-	PartsSetTotal int
-	PartsSetHash  string
+	BlockHash string
 	// basic block info
 	VersionBlock uint64
 	VersionApp   uint64
@@ -56,11 +54,12 @@ type Block struct {
 
 //Transaction struct
 type Transaction struct {
-	BlockID uint64
-	Hash    string
-	Type    string
-	Data    string
-	Time    time.Time
+	BlockID   int64
+	Hash      string
+	GasUsed   int64
+	GasWanted int64
+	Data      string
+	Time      time.Time
 }
 
 //Adapter for data base
@@ -73,13 +72,13 @@ type Adapter interface {
 	GetAccount(id int) (*Account, error)
 	GetAccounts() ([]*Account, error)
 
-	GetBlocksLastHeight() uint64
-	GetBlockMeta(height uint64) (*BlockMeta, error)
+	GetBlocksLastHeight() (uint64, error)
+	GetBlockInfo(height uint64) (*BlockInfo, error)
 	GetBlock(height uint64) (*Block, error)
-	GetBlocksMeta(from uint64, to uint64) ([]*BlockMeta, error)
+	GetBlocksInfo(from uint64, to uint64) ([]*BlockInfo, error)
 	GetBlocks(from uint64, to uint64) ([]*Block, error)
 
 	GetTXsCount(height uint64) int
 	GetTx(height uint64, hash []byte) (*Transaction, error)
-	GetTXs(height uint64) ([]*Transaction, error)
+	GetTXs(height uint64) ([]Transaction, error)
 }
