@@ -8,6 +8,8 @@ import (
 	db "github.com/gallactic/hubble_server/database"
 )
 
+var numDots int
+
 //Explorer class for connecting block chain to data base
 type Explorer struct {
 	BCAdapter bc.Adapter
@@ -96,10 +98,13 @@ func (e *Explorer) Update() error {
 		}
 
 		if d > 1000 {
-			println("\r", d, "new blocks saved!")
+			println("\r", d, "new blocks saved!                   ")
+			println("Checking new blocks...")
 		} else {
-			fmt.Printf("\r%d blocks saved!", currentHeight)
+			e.writeAnim(currentHeight)
 		}
+	} else {
+		e.writeAnim(currentHeight)
 	}
 
 	return nil
@@ -145,4 +150,16 @@ func (e *Explorer) saveBlockTXsInDB(block *bc.Block, bcAdapter bc.Adapter, dbAda
 		}
 	}
 	return nil
+}
+
+func (e *Explorer) writeAnim(currentHeight uint64) {
+	numDots++
+	if numDots > 3 {
+		numDots = 0
+	}
+	dotStr := ""
+	for nDot := 1; nDot <= numDots; nDot++ {
+		dotStr += "."
+	}
+	fmt.Printf("\r%d blocks saved"+dotStr+"       ", currentHeight)
 }
